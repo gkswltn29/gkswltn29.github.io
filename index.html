@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>성경 읽기 진도표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6f5;--surface:#ffffff;--ink:#1c2a2e;--muted:#5d6e72;--line:#d6dedd;
+  --accent:#2c5f8a;--accent-ink:#ffffff;--cell:#e7edec;--done:#2c5f8a;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10171a;--surface:#182226;--ink:#e6eeee;--muted:#9bb0b4;--line:#2a3a3f;
+    --accent:#6fb0e0;--accent-ink:#0c1518;--cell:#243136;--done:#6fb0e0;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10171a;--surface:#182226;--ink:#e6eeee;--muted:#9bb0b4;--line:#2a3a3f;
+  --accent:#6fb0e0;--accent-ink:#0c1518;--cell:#243136;--done:#6fb0e0;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 48px}
+header{padding:24px 0 12px}
+h1{font-size:1.4rem;margin:0 0 4px;font-weight:700}
+.sub{color:var(--muted);font-size:.9rem;margin:0}
+.total{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.total-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pct{font-size:2rem;font-weight:700;line-height:1}
+.count{color:var(--muted);font-size:.9rem}
+.bar{height:8px;background:var(--cell);border-radius:4px;overflow:hidden;margin-top:12px}
+.bar>i{display:block;height:100%;background:var(--done);width:0;transition:width .25s}
+.tabs{display:flex;gap:8px;margin:16px 0 8px}
+.tab{flex:1;padding:10px 8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;font:inherit;font-size:.9rem;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.tab small{display:block;font-weight:400;opacity:.85}
+.book{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.bhead{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.bname{flex:1;font-weight:500}
+.bcount{color:var(--muted);font-size:.85rem;white-space:nowrap}
+.bhead.full .bname::after{content:" ✓";color:var(--accent);font-weight:700}
+.mini{height:3px;background:var(--cell)}
+.mini>i{display:block;height:100%;background:var(--done)}
+.chev{width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s;flex:none}
+.bhead[aria-expanded="true"] .chev{transform:rotate(-135deg)}
+.body{padding:12px 14px 14px;border-top:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px}
+.ch{height:40px;border:0;border-radius:6px;background:var(--cell);color:var(--ink);font:inherit;font-size:.85rem;cursor:pointer}
+.ch[aria-pressed="true"]{background:var(--done);color:var(--accent-ink);font-weight:700}
+.actions{display:flex;gap:8px;margin-top:12px}
+.btn{padding:8px 12px;border:1px solid var(--line);background:none;color:var(--ink);border-radius:8px;font:inherit;font-size:.85rem;cursor:pointer}
+.reset{margin-top:24px;text-align:center}
+.reset .btn{color:var(--muted)}
+.reset .btn.warn{color:#b3261e;border-color:#b3261e}
+.note{color:var(--muted);font-size:.8rem;text-align:center;margin-top:12px}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.bar>i,.chev{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>성경 읽기 진도표</h1>
+    <p class="sub">읽은 장을 눌러 표시하세요.</p>
+  </header>
+
+  <section class="total" aria-live="polite">
+    <div class="total-top"><span class="pct" id="pct">0%</span><span class="count" id="cnt">0 / 1189장</span></div>
+    <div class="bar"><i id="bar"></i></div>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t0" aria-selected="true" data-tab="0">히브리어 성경<small id="s0"></small></button>
+    <button class="tab" role="tab" id="t1" aria-selected="false" data-tab="1">그리스어 성경<small id="s1"></small></button>
+  </div>
+
+  <main id="list"></main>
+
+  <div class="reset"><button class="btn" id="reset">진도 모두 지우기</button></div>
+  <p class="note" id="note"></p>
+</div>
+
+<script>
+const BOOKS=[
+["창세기",50],["출애굽기",40],["레위기",27],["민수기",36],["신명기",34],["여호수아",24],["판관기",21],["룻기",4],
+["사무엘 첫째",31],["사무엘 둘째",24],["열왕기 첫째",22],["열왕기 둘째",25],["역대기 첫째",29],["역대기 둘째",36],
+["에스라",10],["느헤미야",13],["에스더",10],["욥기",42],["시편",150],["잠언",31],["전도서",12],["노래",8],
+["이사야",66],["예레미야",52],["예레미야 애가",5],["에스겔",48],["다니엘",12],["호세아",14],["요엘",3],["아모스",9],
+["오바댜",1],["요나",4],["미가",7],["나훔",3],["하박국",3],["스바냐",3],["학개",2],["스가랴",14],["말라기",4],
+["마태복음",28],["마가복음",16],["누가복음",24],["요한복음",21],["사도행전",28],["로마서",16],
+["고린도 첫째",16],["고린도 둘째",13],["갈라디아서",6],["에베소서",6],["빌립보서",4],["골로새서",4],
+["데살로니가 첫째",5],["데살로니가 둘째",3],["디모데 첫째",6],["디모데 둘째",4],["디도서",3],["빌레몬서",1],
+["히브리서",13],["야고보서",5],["베드로 첫째",5],["베드로 둘째",3],["요한 첫째",5],["요한 둘째",1],["요한 셋째",1],
+["유다서",1],["계시록",22]
+];
+const HEB=39,KEY="bible-progress-v1";
+let state={},open=new Set(),tab=0,confirming=false,canSave=true;
+
+try{const raw=localStorage.getItem(KEY);if(raw)state=JSON.parse(raw)||{};}catch(e){canSave=false;}
+BOOKS.forEach(([n,c],i)=>{
+  let s=typeof state[i]==="string"?state[i]:"";
+  state[i]=s.padEnd(c,"0").slice(0,c);
+});
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){canSave=false;updateNote();}}
+function updateNote(){
+  document.getElementById("note").textContent=canSave
+    ?"진도는 이 기기의 이 브라우저에만 저장됩니다."
+    :"이 환경에서는 저장되지 않습니다. 페이지를 닫으면 진도가 사라집니다.";
+}
+const done=i=>[...state[i]].filter(x=>x==="1").length;
+const range=t=>t===0?[0,HEB]:[HEB,BOOKS.length];
+function sum(from,to){let d=0,t=0;for(let i=from;i<to;i++){d+=done(i);t+=BOOKS[i][1];}return[d,t];}
+
+function render(){
+  const [d,t]=sum(0,BOOKS.length);
+  const p=Math.floor(d/t*100);
+  document.getElementById("pct").textContent=p+"%";
+  document.getElementById("cnt").textContent=d+" / "+t+"장";
+  document.getElementById("bar").style.width=(d/t*100)+"%";
+  [0,1].forEach(k=>{const[a,b]=range(k);const[x,y]=sum(a,b);document.getElementById("s"+k).textContent=x+" / "+y+"장";
+    const el=document.getElementById("t"+k);el.setAttribute("aria-selected",String(k===tab));});
+  const [a,b]=range(tab);
+  let h="";
+  for(let i=a;i<b;i++){
+    const [name,c]=BOOKS[i],n=done(i),isOpen=open.has(i);
+    h+=`<section class="book"><button class="bhead${n===c?" full":""}" data-book="${i}" aria-expanded="${isOpen}">
+      <span class="bname">${name}</span><span class="bcount">${n} / ${c}</span><span class="chev"></span></button>
+      <div class="mini"><i style="width:${n/c*100}%"></i></div>`;
+    if(isOpen){
+      h+=`<div class="body"><div class="grid">`;
+      for(let j=0;j<c;j++)h+=`<button class="ch" data-book="${i}" data-ch="${j}" aria-pressed="${state[i][j]==="1"}" aria-label="${name} ${j+1}장">${j+1}</button>`;
+      h+=`</div><div class="actions"><button class="btn" data-all="${i}">전체 읽음</button><button class="btn" data-none="${i}">전체 해제</button></div></div>`;
+    }
+    h+=`</section>`;
+  }
+  document.getElementById("list").innerHTML=h;
+  const r=document.getElementById("reset");
+  r.textContent=confirming?"정말 지울까요? 한 번 더 누르세요":"진도 모두 지우기";
+  r.classList.toggle("warn",confirming);
+}
+function setBook(i,v){state[i]=(v?"1":"0").repeat(BOOKS[i][1]);}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.tab){tab=+t.dataset.tab;confirming=false;render();return;}
+  if(t.id==="reset"){
+    if(!confirming){confirming=true;render();return;}
+    BOOKS.forEach((_,i)=>setBook(i,false));confirming=false;save();render();return;
+  }
+  confirming=false;
+  if(t.dataset.ch!==undefined){
+    const i=+t.dataset.book,j=+t.dataset.ch,s=state[i];
+    state[i]=s.slice(0,j)+(s[j]==="1"?"0":"1")+s.slice(j+1);
+    save();render();return;
+  }
+  if(t.dataset.all!==undefined){setBook(+t.dataset.all,true);save();render();return;}
+  if(t.dataset.none!==undefined){setBook(+t.dataset.none,false);save();render();return;}
+  if(t.dataset.book!==undefined){
+    const i=+t.dataset.book;open.has(i)?open.delete(i):open.add(i);render();
+  }
+});
+updateNote();render();
+</script>
+</body>
+</html>
